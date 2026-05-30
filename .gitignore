@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environments
+.venv/
+venv/
+env/
+
+# Data and experiment artifacts
+artifacts/
+/data/
+*.zip
+*.parquet
+*.pkl
+*.pt
+*.pth
+*.csv.gz
+
+# Large notebooks/cache outputs
+.ipynb_checkpoints/
+*.log
+tmp/
+temp/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

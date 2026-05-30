@@ -1,0 +1,5 @@
+fold,train_start,train_end_inclusive,validation_start,validation_end_inclusive,selection_metric,frozen_test_start,frozen_test_end_exclusive
+fold_2018,2010-01-04,2017-12-29,2018-01-02,2018-12-31,mean_validation_sharpe_minus_stability_penalty,2022-01-03,2023-03-01
+fold_2019,2010-01-04,2018-12-31,2019-01-02,2019-12-31,mean_validation_sharpe_minus_stability_penalty,2022-01-03,2023-03-01
+fold_2020,2010-01-04,2019-12-31,2020-01-02,2020-12-31,mean_validation_sharpe_minus_stability_penalty,2022-01-03,2023-03-01
+fold_2021,2010-01-04,2020-12-31,2021-01-04,2021-12-31,mean_validation_sharpe_minus_stability_penalty,2022-01-03,2023-03-01

@@ -1,0 +1,8 @@
+gymnasium
+numpy
+pandas
+pyarrow
+pyyaml
+scikit-learn
+stable-baselines3
+torch

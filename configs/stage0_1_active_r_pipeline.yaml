@@ -1,0 +1,729 @@
+# Auto-generated compact active config. Source: configs/stage0_1_stabilized_ppo.yaml
+# Historical variants are intentionally omitted from this file; use the source config for audits/reruns.
+
+experiment:
+  name: stage0_1_active_r_pipeline
+  status: active
+  purpose: Compact active config for current R-line work. Keeps only R3/R6c/R7 and the required inheritance chain plus one
+    flat baseline. Historical E/R variants remain in stage0_1_stabilized_ppo.yaml.
+data:
+  feature_set: stage0_1_weight_features
+  model_ready_csv: artifacts/stage0_1/features/stage0_1_weight_features_model_ready.csv
+  raw_features_csv: artifacts/stage0_1/features/stage0_1_weight_features_raw.csv
+  transform_stats_csv: artifacts/stage0_1/features/stage0_1_weight_feature_transform_stats.csv
+  train_start: '2010-01-04'
+  validation_end: '2021-12-31'
+  frozen_test_start: '2022-01-03'
+  frozen_test_end: '2023-02-28'
+normalization:
+  enabled: true
+  fit_scope: fold_train_only
+  lower_quantile: 0.01
+  upper_quantile: 0.99
+walk_forward:
+  folds_csv: configs/stage0_1_walk_forward_folds.csv
+  fold_ids:
+  - fold_2018
+  - fold_2019
+  - fold_2020
+  - fold_2021
+  selection_score: mean_validation_sharpe_minus_0_5_std_sharpe
+output:
+  root_dir: artifacts/stage0_1
+  run_name: weight_based_initial_grid
+  skip_completed: true
+instrumentation:
+  save_sample_diagnostics: true
+  save_rollout_snapshots: true
+  rollout_snapshot_every_n_updates: 1
+universe:
+  cash_symbol: CASH
+  sector_map: dow30_static
+environment:
+  initial_amount: 1000000.0
+  transaction_cost_pct: 0.001
+  reward_scale: 100.0
+  reward:
+    return_weight: 1.0
+    turnover_penalty: 0.02
+    drawdown_penalty: 0.1
+    concentration_penalty: 0.001
+    action_change_penalty: 0.01
+  observation:
+    include_features: true
+    include_previous_weights: true
+    include_portfolio_state: true
+  execution:
+    turnover_cap: 0.35
+    integral_clip: 0.5
+    derivative_clip: 0.5
+policy:
+  net_arch:
+    pi:
+    - 128
+    - 64
+    vf:
+    - 256
+    - 128
+  activation: ReLU
+  ortho_init: true
+  dirichlet:
+    alpha_min: 1.0
+    alpha_max: 80.0
+  root_split:
+    q_min: 0.0
+    q_max: 0.995
+    alpha_floor: 0.05
+    kappa_min: 2.0
+    kappa_max: 80.0
+    risky_alpha_max: 100.0
+  learned_kp:
+    gate_kappa_min: 8.0
+    gate_kappa_max: 80.0
+  dirtree:
+    group_alpha_max: 100.0
+    leaf_alpha_max: 120.0
+  logitnormal:
+    group_log_std_min: -2.5
+    group_log_std_max: 0.3
+  routed:
+    root_latent_dim: 32
+    risky_latent_dim: 32
+    hidden_dim: 128
+    root_feature_names:
+    - VIX
+    - VIX_change_1d
+    - VIX_percentile_252
+    - 10Y_Yield
+    - yield_change_1d
+    - yield_change_5d
+    - Regime_1_Prob
+    - Regime_1_Prob_delta_1d
+    - regime_entropy
+    - SP500_Trend
+    - SP500_Trend_delta_1d
+    - turbulence
+    - turbulence_delta_1d
+    - turbulence_percentile_252
+    - universe_return_1d
+    - universe_return_5d
+    - universe_return_20d
+    - universe_vol_20d
+feature_subsets:
+  compact22_stage0_like:
+  - Regime_1_Prob
+  - SP500_Trend
+  - turbulence
+  - 10Y_Yield
+  - VIX
+  - atr_rel
+  - logret_1d
+  - logret_5d
+  - realized_vol_20d
+  - drawdown_20d
+  - macd
+  - rsi_30
+  - cci_30
+  - dx_30
+  - volume_ratio
+  - obv_pct_change
+  - PE_ratio
+  - PB_ratio
+  - dividend_yield
+  - debt_ratio
+  - revenue_growth
+  - EV_EBITDA
+ppo:
+  total_timesteps: 350000
+  n_steps: 1024
+  batch_size: 256
+  n_epochs: 4
+  learning_rate: 0.0001
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.1
+  ent_coef: 0.0001
+  vf_coef: 0.5
+  max_grad_norm: 0.3
+  target_kl: 0.01
+  seed: 42
+variants:
+- name: R3_root_K20_PD_confidence_slice_residual_stock_v1
+  enabled: false
+  policy_kind: root_split_beta_dirichlet
+  action_transform: root_split_weights
+  ppo:
+    total_timesteps: 17500
+  policy:
+    net_arch:
+      pi:
+      - 256
+      - 128
+      - 64
+      vf:
+      - 256
+      - 128
+      - 64
+  root_split:
+    q_min: 0.0
+    q_max: 0.995
+    derived_features:
+      market_beta: 0.5
+      vix_market_beta: 0.25
+      residual_breadth_threshold: 0.0
+      train_only_beta:
+        enabled: true
+        mode: monthly_asof
+        min_samples: 120
+        clip_abs: 5.0
+        market_factor_feature_5d: SP500_Trend
+        market_factor_feature_20d: SP500_Trend
+        stock_market_factor_feature_5d: universe_return_5d
+        stock_market_factor_feature_20d: universe_return_20d
+        vix_factor_feature_5d: universe_return_5d
+        vix_trend_factor_feature_5d: SP500_Trend
+        vix_surprise_mode: regression
+    trade_logging:
+      direction_eps: 1.0e-06
+    cash_prior:
+      enabled: true
+      lambda_cash: 0.003
+      cash_low: 0.03
+      cash_high: 0.35
+      intercept: -0.15
+      feature_weights:
+        VIX_change_5d: 0.15
+        VIX_pct_change_1d: 0.08
+        vix_surprise_return_5d: 0.25
+        turbulence_delta_1d: 0.15
+        Regime_1_Prob_delta_1d: 0.1
+        SP500_Trend_delta_1d: -0.05
+        universe_return_5d: -0.05
+        residual_universe_return_5d: -0.3
+        residual_breadth_5d: -0.25
+    k_window_execution:
+      enabled: true
+      window_days: 20
+      mode: PD_confidence_slice_residual_stock_v1
+      log_train_daily_trace: true
+      confidence_stop_recovery:
+        enabled: true
+        eps_q: 0.005
+        eps_q_anchor: 0.005
+        threshold_derisk: 0.55
+        threshold_rerisk: 0.55
+        use_cash_condition: false
+        recovery_trigger_threshold: 0.72
+        derisk_early_update_threshold: 0.9
+        recovery_persistence_days: 2
+        risk_break_persistence_days: 2
+        early_update_cooldown_days: 5
+        require_recovery_anchor_rerisk: true
+        recovery_min_anchor_gap: 0.015
+        recovery_min_confidence_rerisk: 0.58
+        risk_break_min_confidence_derisk: 0.0
+        target_strength_eps: 0.02
+        target_strength_tau: 0.1
+        cash_duration_days_scale: 20.0
+        confidence_slice:
+          enabled: true
+          min_scale: 0.15
+          max_scale: 1.0
+          apply_to_hold: false
+        stock_slice:
+          enabled: true
+          min_scale: 0.1
+          max_scale: 1.0
+          eps_weight: 1.0e-06
+          top_k_buy: 0
+          top_k_sell: 0
+          nonselected_scale: 0.0
+          buy_score:
+            intercept: -0.05
+            feature_weights:
+              residual_momentum_5d: 0.35
+              residual_momentum_20d: 0.2
+              residual_momentum_rank_5d: 0.25
+              volume_confirmation: 0.15
+              trend_delta: 0.15
+              negative_residual_volatility_20d: 0.1
+          sell_score:
+            intercept: -0.05
+            feature_weights:
+              negative_residual_momentum_5d: 0.35
+              negative_residual_momentum_20d: 0.2
+              trend_break: 0.2
+              residual_volatility_20d: 0.15
+              volume_confirmation: 0.05
+        derisk_confidence_mix:
+          risk_stress: 0.75
+          target_strength: 0.25
+          cash_duration_score: 0.0
+        rerisk_confidence_mix:
+          recovery_score: 0.7
+          target_strength: 0.2
+          cash_duration_score: 0.1
+        risk_stress:
+          intercept: -0.2
+          feature_weights:
+            VIX_change_5d: 0.18
+            VIX_pct_change_1d: 0.1
+            vix_surprise_return_5d: 0.3
+            turbulence_delta_1d: 0.18
+            Regime_1_Prob_delta_1d: 0.15
+            SP500_Trend_delta_1d: -0.05
+            universe_return_5d: -0.05
+            residual_universe_return_5d: -0.3
+            residual_breadth_5d: -0.3
+            residual_dispersion_5d: 0.15
+        recovery_score:
+          intercept: -0.08
+          feature_weights:
+            VIX_change_5d: -0.12
+            VIX_pct_change_1d: -0.08
+            vix_surprise_return_5d: -0.25
+            turbulence_delta_1d: -0.12
+            Regime_1_Prob_delta_1d: -0.12
+            SP500_Trend_delta_1d: 0.1
+            universe_return_5d: 0.05
+            residual_universe_return_5d: 0.4
+            residual_universe_return_20d: 0.15
+            residual_breadth_5d: 0.45
+            residual_dispersion_5d: -0.15
+        market_context_features:
+        - Regime_0_Prob
+        - Regime_1_Prob
+        - Regime_1_Prob_delta_1d
+        - regime_entropy
+        - SP500_Trend
+        - SP500_Trend_delta_1d
+        - VIX
+        - VIX_change_1d
+        - VIX_change_5d
+        - VIX_pct_change_1d
+        - turbulence
+        - turbulence_delta_1d
+        - universe_return_1d
+        - universe_return_5d
+        - universe_return_20d
+        - residual_universe_return_20d
+        - residual_universe_return_5d
+        - residual_breadth_20d
+        - residual_breadth_5d
+        - residual_dispersion_20d
+        - residual_dispersion_5d
+        - vix_surprise_5d
+        - vix_surprise_return_5d
+  controller:
+    type: PD
+    kp: 0.35
+    ki: 0.0
+    kd: 0.08
+- name: R5_root_K20_stock_K5_PD_mild_root_slice_stock_conf_v1
+  enabled: false
+  inherits: R3_root_K20_PD_confidence_slice_residual_stock_v1
+  ppo:
+    total_timesteps: 70000
+  root_split:
+    k_window_execution:
+      mode: PD_mild_root_slice_stock_conf_v1
+      dual_window:
+        enabled: true
+        root_window_days: 20
+        stock_window_days: 5
+      confidence_stop_recovery:
+        threshold_derisk: 0.45
+        threshold_rerisk: 0.35
+        recovery_trigger_threshold: 0.7
+        derisk_early_update_threshold: 0.85
+        recovery_persistence_days: 2
+        risk_break_persistence_days: 1
+        early_update_cooldown_days: 5
+        require_recovery_anchor_rerisk: true
+        recovery_min_anchor_gap: 0.015
+        recovery_min_confidence_rerisk: 0.55
+        risk_break_min_confidence_derisk: 0.75
+        risk_break_ignore_cooldown: true
+        confidence_slice:
+          enabled: true
+          partial_stop_enabled: true
+          derisk_min_scale: 0.35
+          rerisk_min_scale: 0.55
+          max_scale: 1.0
+          derisk_stop_floor: 0.1
+          rerisk_stop_floor: 0.25
+          apply_to_hold: false
+        stock_slice:
+          enabled: true
+          min_scale: 0.1
+          max_scale: 1.0
+          buy_min_scale: 0.35
+          sell_min_scale: 0.35
+          rerisk_buy_min_scale: 0.65
+          rerisk_sell_min_scale: 0.25
+          derisk_buy_min_scale: 0.1
+          derisk_sell_min_scale: 0.65
+          hold_buy_min_scale: 0.35
+          hold_sell_min_scale: 0.35
+          eps_weight: 1.0e-06
+- name: R5_root_K20_stock_K5_PD_mild_root_slice_stock_conf_internaldays_v1
+  enabled: false
+  inherits: R5_root_K20_stock_K5_PD_mild_root_slice_stock_conf_v1
+  ppo:
+    total_timesteps: 360000
+  root_split:
+    k_window_execution:
+      target_internal_trading_days: 350000
+- name: R6_root_K20_stock_K5_PD_mild_slice_top5_rotation_internaldays_v1
+  enabled: false
+  inherits: R5_root_K20_stock_K5_PD_mild_root_slice_stock_conf_internaldays_v1
+  root_split:
+    k_window_execution:
+      mode: PD_mild_root_slice_stock_conf_top5_rotation_internaldays_v1
+      incremental_topk_flow:
+        enabled: true
+        top_k_buy: 5
+        top_k_sell: 5
+        priority_reference: window_start
+        sell_expansion_enabled: true
+        rotation_enabled: true
+        rotation_budget_l1_per_day: 0.005
+        eps: 1.0e-10
+- name: R6b_root_K20_stock_K5_PD_mild_slice_groupaware_top5_rotation_internaldays_v1
+  enabled: false
+  inherits: R6_root_K20_stock_K5_PD_mild_slice_top5_rotation_internaldays_v1
+  discovered_hierarchy:
+    enabled: true
+    method: residual_correlation
+    target_num_groups: 6
+    min_group_size: 2
+  root_split:
+    k_window_execution:
+      mode: PD_mild_root_slice_stock_conf_groupaware_top5_rotation_internaldays_v1
+      incremental_topk_flow:
+        enabled: true
+        top_k_buy: 5
+        top_k_sell: 5
+        priority_reference: window_start
+        sell_expansion_enabled: true
+        rotation_enabled: true
+        rotation_budget_l1_per_day: 0.005
+        eps: 1.0e-10
+        group_aware:
+          enabled: true
+          default_group_cap: 0.45
+          priority_floor: 0.05
+          pressure_weight: 1.0
+          capacity_weight: 0.5
+          sell_overweight_weight: 1.0
+          min_multiplier: 0.05
+          max_multiplier: 5.0
+- name: R6c_root_K20_stock_K5_PD_mild_slice_group_riskaware_top8_sell12_rotation_internaldays_v1
+  enabled: false
+  inherits: R6b_root_K20_stock_K5_PD_mild_slice_groupaware_top5_rotation_internaldays_v1
+  root_split:
+    k_window_execution:
+      mode: PD_mild_root_slice_stock_conf_group_riskaware_topk_rotation_internaldays_v1
+      incremental_topk_flow:
+        enabled: true
+        top_k_buy: 8
+        top_k_sell: 12
+        priority_reference: window_start
+        sell_expansion_enabled: true
+        rotation_enabled: true
+        rotation_budget_l1_per_day: 0.0025
+        eps: 1.0e-10
+        group_aware:
+          enabled: true
+          default_group_cap: 0.6
+          priority_floor: 0.05
+          pressure_weight: 1.0
+          capacity_weight: 0.25
+          sell_overweight_weight: 1.25
+          min_multiplier: 0.05
+          max_multiplier: 5.0
+        risk_aware:
+          enabled: true
+          buy_gate:
+            enabled: true
+            min_confidence_rerisk: 0.5
+            min_recovery_score: 0.55
+            max_risk_stress: 0.9
+            min_residual_breadth_excess_5d: -0.02
+            min_residual_breadth_excess_20d: -0.05
+          rotation_stress_gate:
+            enabled: true
+            stress_start: 0.55
+            stress_full: 0.9
+            min_scale: 0.0
+            max_scale: 1.0
+          sell_side:
+            risk_break_weight: 1.0
+            residual_deterioration_weight: 0.75
+            confidence_derisk_weight: 0.25
+            min_multiplier: 0.05
+            max_multiplier: 5.0
+- name: R7_root_K20_stock_K5_PD_mild_slice_rescorr_groupquality_top10_sell12_rotation_internaldays_v1
+  enabled: false
+  inherits: R6c_root_K20_stock_K5_PD_mild_slice_group_riskaware_top8_sell12_rotation_internaldays_v1
+  root_split:
+    k_window_execution:
+      mode: PD_mild_root_slice_stock_conf_rescorr_groupquality_topk_rotation_internaldays_v1
+      incremental_topk_flow:
+        top_k_buy: 10
+        top_k_sell: 12
+        group_aware:
+          enabled: true
+          default_group_cap: 0.6
+          priority_floor: 0.05
+          pressure_weight: 1.0
+          capacity_weight: 0.25
+          sell_overweight_weight: 1.25
+          min_multiplier: 0.05
+          max_multiplier: 5.0
+          residual_quality:
+            enabled: true
+            rank_5d_weight: 0.7
+            rank_20d_weight: 0.3
+            residual_5d_weight: 0.7
+            residual_20d_weight: 0.3
+            buy_rank_weight: 0.6
+            sell_rank_weight: 0.85
+            buy_breadth_weight: 0.5
+            sell_breadth_weight: 0.5
+            residual_positive_threshold: 0.0
+            min_multiplier: 0.25
+            max_multiplier: 2.5
+- name: R3_root_K20_PD_confidence_slice_residual_stock_v2
+  enabled: false
+  policy_kind: root_split_beta_dirichlet
+  action_transform: root_split_weights
+  ppo:
+    total_timesteps: 17500
+  policy:
+    net_arch:
+      pi:
+      - 256
+      - 128
+      - 64
+      vf:
+      - 256
+      - 128
+      - 64
+  root_split:
+    q_min: 0.0
+    q_max: 0.995
+    derived_features:
+      market_beta: 0.5
+      vix_market_beta: 0.25
+      residual_breadth_threshold: 0.0
+      dispersion_breadth_excess_threshold_5d: 0.08
+      dispersion_breadth_excess_threshold_20d: 0.08
+      train_only_beta:
+        enabled: true
+        mode: monthly_asof
+        min_samples: 120
+        clip_abs: 5.0
+        market_factor_feature_5d: SP500_Trend
+        market_factor_feature_20d: SP500_Trend
+        stock_market_factor_feature_5d: universe_return_5d
+        stock_market_factor_feature_20d: universe_return_20d
+        vix_factor_feature_5d: universe_return_5d
+        vix_trend_factor_feature_5d: SP500_Trend
+        vix_surprise_mode: regression
+        shrinkage:
+          enabled: true
+          lambda: 500.0
+          final_clip_abs: 1.25
+    trade_logging:
+      direction_eps: 1.0e-06
+    cash_prior:
+      enabled: true
+      lambda_cash: 0.003
+      cash_low: 0.03
+      cash_high: 0.35
+      intercept: -0.15
+      feature_weights:
+        VIX_change_5d: 0.16
+        VIX_pct_change_1d: 0.08
+        vix_surprise_return_5d: 0.22
+        turbulence_delta_1d: 0.12
+        Regime_1_Prob_delta_1d: 0.12
+        sp500_trend_delta_down_1d: 0.18
+        market_down_5d: 0.12
+        residual_universe_down_5d: 0.22
+        residual_breadth_shortfall_5d: 0.28
+        market_up_5d: -0.02
+        residual_universe_up_5d: -0.2
+        residual_breadth_excess_5d: -0.24
+    k_window_execution:
+      enabled: true
+      window_days: 20
+      mode: PD_confidence_slice_residual_stock_v2
+      log_train_daily_trace: true
+      confidence_stop_recovery:
+        enabled: true
+        eps_q: 0.005
+        eps_q_anchor: 0.005
+        threshold_derisk: 0.55
+        threshold_rerisk: 0.55
+        use_cash_condition: false
+        recovery_trigger_threshold: 0.72
+        derisk_early_update_threshold: 0.9
+        recovery_persistence_days: 2
+        risk_break_persistence_days: 2
+        early_update_cooldown_days: 5
+        risk_break_ignore_cooldown: true
+        require_recovery_anchor_rerisk: true
+        recovery_min_anchor_gap: 0.015
+        recovery_min_confidence_rerisk: 0.58
+        recovery_min_residual_universe_up_5d: 0.02
+        recovery_min_residual_breadth_excess_5d: 0.02
+        recovery_max_risk_stress: 0.72
+        risk_break_min_confidence_derisk: 0.75
+        target_strength_eps: 0.02
+        target_strength_tau: 0.1
+        cash_duration_days_scale: 20.0
+        confidence_slice:
+          enabled: true
+          min_scale: 0.15
+          max_scale: 1.0
+          apply_to_hold: false
+        stock_slice:
+          enabled: true
+          min_scale: 0.1
+          max_scale: 1.0
+          eps_weight: 1.0e-06
+          top_k_buy: 0
+          top_k_sell: 0
+          nonselected_scale: 0.0
+          buy_score:
+            intercept: 0.02
+            feature_weights:
+              residual_momentum_5d: 0.35
+              residual_momentum_20d: 0.2
+              residual_momentum_rank_centered_5d: 0.3
+              volume_confirmation: 0.1
+              trend_delta: 0.15
+              negative_residual_volatility_20d: 0.08
+          sell_score:
+            intercept: -0.05
+            feature_weights:
+              negative_residual_momentum_5d: 0.35
+              negative_residual_momentum_20d: 0.2
+              trend_break: 0.2
+              residual_volatility_20d: 0.15
+              volume_confirmation: 0.05
+        derisk_confidence_mix:
+          risk_stress: 0.8
+          target_strength: 0.2
+          cash_duration_score: 0.0
+        rerisk_confidence_mix:
+          recovery_score: 0.74
+          target_strength: 0.16
+          cash_duration_score: 0.1
+        rerisk_risk_stress_gate:
+          enabled: true
+          strength: 0.75
+          power: 1.0
+          min_gate: 0.25
+          max_gate: 1.0
+        risk_stress:
+          intercept: -0.25
+          feature_weights:
+            VIX_change_5d: 0.28
+            VIX_pct_change_1d: 0.1
+            vix_surprise_return_5d: 0.38
+            turbulence_delta_1d: 0.18
+            Regime_1_Prob_delta_1d: 0.16
+            sp500_trend_delta_down_1d: 0.42
+            market_down_5d: 0.32
+            market_down_20d: 0.2
+            residual_universe_down_5d: 0.3
+            residual_breadth_shortfall_5d: 0.35
+            residual_dispersion_5d: 0.12
+        recovery_score:
+          intercept: -0.1
+          feature_weights:
+            VIX_change_5d: -0.12
+            VIX_pct_change_1d: -0.08
+            vix_surprise_return_5d: -0.16
+            turbulence_delta_1d: -0.08
+            Regime_1_Prob_delta_1d: -0.08
+            sp500_trend_delta_up_1d: 0.03
+            market_up_5d: 0.02
+            market_up_20d: 0.01
+            residual_universe_up_5d: 0.4
+            residual_universe_up_20d: 0.18
+            residual_breadth_excess_5d: 1.2
+            residual_breadth_excess_20d: 0.65
+            residual_dispersion_5d_breadth_weak: -0.08
+        market_context_features:
+        - Regime_0_Prob
+        - Regime_1_Prob
+        - Regime_1_Prob_delta_1d
+        - regime_entropy
+        - SP500_Trend
+        - SP500_Trend_delta_1d
+        - sp500_trend_delta_down_1d
+        - sp500_trend_delta_up_1d
+        - VIX
+        - VIX_change_1d
+        - VIX_change_5d
+        - VIX_pct_change_1d
+        - turbulence
+        - turbulence_delta_1d
+        - universe_return_1d
+        - universe_return_5d
+        - universe_return_20d
+        - market_down_5d
+        - market_up_5d
+        - market_down_20d
+        - market_up_20d
+        - residual_universe_return_20d
+        - residual_universe_return_5d
+        - residual_universe_down_20d
+        - residual_universe_up_20d
+        - residual_universe_down_5d
+        - residual_universe_up_5d
+        - residual_breadth_20d
+        - residual_breadth_5d
+        - residual_breadth_excess_20d
+        - residual_breadth_shortfall_20d
+        - residual_breadth_excess_5d
+        - residual_breadth_shortfall_5d
+        - residual_dispersion_20d
+        - residual_dispersion_5d
+        - residual_dispersion_5d_breadth_weak
+        - vix_surprise_5d
+        - vix_surprise_return_5d
+  controller:
+    type: PD
+    kp: 0.35
+    ki: 0.0
+    kd: 0.08
+- name: flat_dirichlet_pd_stage0style256_v1
+  policy_kind: flat_dirichlet
+  action_transform: direct_weights
+  policy:
+    net_arch:
+      pi:
+      - 256
+      - 128
+      - 64
+      vf:
+      - 256
+      - 128
+      - 64
+  controller:
+    type: PD
+    kp: 0.35
+    ki: 0.0
+    kd: 0.08
+acceptance:
+  max_mean_approx_kl: 0.02
+  max_clip_fraction: 0.3
+  max_turnover_mean: 0.35
+  max_projection_residual_mean: 0.001
+  must_beat_equal_weight_on_frozen_test_return: true
+  must_beat_equal_weight_on_frozen_test_sharpe: true
